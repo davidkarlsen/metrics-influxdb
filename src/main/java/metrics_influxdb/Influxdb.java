@@ -12,6 +12,8 @@
 //	this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>. 
 package metrics_influxdb;
 
+import io.dropwizard.metrics.MetricName;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -87,10 +89,10 @@ public class Influxdb {
    * @param columns
    * @param points
    */
-  public void appendSeries(String namePrefix, String name, String nameSuffix, String[] columns, Object[][] points) {
+  public void appendSeries(String namePrefix, MetricName name, String nameSuffix, String[] columns, Object[][] points) {
     if (json.length() > 1)
       json.append(',');
-    json.append("{\"name\":\"").append(namePrefix).append(name).append(nameSuffix).append("\",\"columns\":[");
+    json.append("{\"name\":\"").append(namePrefix).append(name.getKey()).append(nameSuffix).append("\",\"columns\":[");
     for (int i = 0; i < columns.length; i++) {
       if (i > 0)
         json.append(',');

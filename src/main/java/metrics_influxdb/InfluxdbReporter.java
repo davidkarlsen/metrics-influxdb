@@ -17,20 +17,21 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
+import io.dropwizard.metrics.MetricName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.Clock;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metered;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.ScheduledReporter;
-import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
+import io.dropwizard.metrics.Clock;
+import io.dropwizard.metrics.Counter;
+import io.dropwizard.metrics.Gauge;
+import io.dropwizard.metrics.Histogram;
+import io.dropwizard.metrics.Meter;
+import io.dropwizard.metrics.Metered;
+import io.dropwizard.metrics.MetricFilter;
+import io.dropwizard.metrics.MetricRegistry;
+import io.dropwizard.metrics.ScheduledReporter;
+import io.dropwizard.metrics.Snapshot;
+import io.dropwizard.metrics.Timer;
 
 /**
  * A reporter which publishes metric values to a InfluxDB server.
@@ -241,34 +242,34 @@ public class InfluxdbReporter extends ScheduledReporter {
     this.prefix = (prefix == null) ? "" : (prefix.trim() + ".");
   }
 
-  @Override
-  @SuppressWarnings("rawtypes")
-  public void report(SortedMap<String, Gauge> gauges,
-      SortedMap<String, Counter> counters,
-      SortedMap<String, Histogram> histograms,
-      SortedMap<String, Meter> meters,
-      SortedMap<String, Timer> timers) {
+    @Override
+    public void report( SortedMap<MetricName, Gauge> gauges,
+                        SortedMap<MetricName, Counter> counters,
+                        SortedMap<MetricName, Histogram> histograms,
+                        SortedMap<MetricName, Meter> meters,
+                        SortedMap<MetricName, Timer> timers )
+    {
     final long timestamp = clock.getTime();
 
     // oh it'd be lovely to use Java 7 here
     try {
-      for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+      for (Map.Entry<MetricName, Gauge> entry : gauges.entrySet()) {
         reportGauge(entry.getKey(), entry.getValue(), timestamp);
       }
 
-      for (Map.Entry<String, Counter> entry : counters.entrySet()) {
+      for (Map.Entry<MetricName, Counter> entry : counters.entrySet()) {
         reportCounter(entry.getKey(), entry.getValue(), timestamp);
       }
 
-      for (Map.Entry<String, Histogram> entry : histograms.entrySet()) {
+      for (Map.Entry<MetricName, Histogram> entry : histograms.entrySet()) {
         reportHistogram(entry.getKey(), entry.getValue(), timestamp);
       }
 
-      for (Map.Entry<String, Meter> entry : meters.entrySet()) {
+      for (Map.Entry<MetricName, Meter> entry : meters.entrySet()) {
         reportMeter(entry.getKey(), entry.getValue(), timestamp);
       }
 
-      for (Map.Entry<String, Timer> entry : timers.entrySet()) {
+      for (Map.Entry<MetricName, Timer> entry : timers.entrySet()) {
         reportTimer(entry.getKey(), entry.getValue(), timestamp);
       }
       influxdb.sendRequest(true, false);
@@ -278,7 +279,7 @@ public class InfluxdbReporter extends ScheduledReporter {
     }
   }
 
-  private void reportTimer(String name, Timer timer, long timestamp) throws IOException {
+  private void reportTimer(MetricName name, Timer timer, long timestamp) throws IOException {
     final Snapshot snapshot = timer.getSnapshot();
     Object[] p = pointsTimer[0];
     p[0] = timestamp;
@@ -300,7 +301,7 @@ public class InfluxdbReporter extends ScheduledReporter {
     influxdb.appendSeries(prefix, name, ".timer", COLUMNS_TIMER, pointsTimer);
   }
 
-  private void reportHistogram(String name, Histogram histogram, long timestamp) throws IOException {
+  private void reportHistogram(MetricName name, Histogram histogram, long timestamp) throws IOException {
     final Snapshot snapshot = histogram.getSnapshot();
     Object[] p = pointsHistogram[0];
     p[0] = timestamp;
@@ -318,7 +319,7 @@ public class InfluxdbReporter extends ScheduledReporter {
     influxdb.appendSeries(prefix, name, ".histogram", COLUMNS_HISTOGRAM, pointsHistogram);
   }
 
-  private void reportCounter(String name, Counter counter, long timestamp) throws IOException {
+  private void reportCounter(MetricName name, Counter counter, long timestamp) throws IOException {
     Object[] p = pointsCounter[0];
     p[0] = timestamp;
     p[1] = counter.getCount();
@@ -326,7 +327,7 @@ public class InfluxdbReporter extends ScheduledReporter {
     influxdb.appendSeries(prefix, name, ".count", COLUMNS_COUNT, pointsCounter);
   }
 
-  private void reportGauge(String name, Gauge<?> gauge, long timestamp) throws IOException {
+  private void reportGauge(MetricName name, Gauge<?> gauge, long timestamp) throws IOException {
     Object[] p = pointsGauge[0];
     p[0] = timestamp;
     p[1] = gauge.getValue();
@@ -334,7 +335,7 @@ public class InfluxdbReporter extends ScheduledReporter {
     influxdb.appendSeries(prefix, name, ".value", COLUMNS_GAUGE, pointsGauge);
   }
 
-  private void reportMeter(String name, Metered meter, long timestamp) throws IOException {
+  private void reportMeter(MetricName name, Metered meter, long timestamp) throws IOException {
     Object[] p = pointsMeter[0];
     p[0] = timestamp;
     p[1] = meter.getCount();
